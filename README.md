@@ -1,7 +1,11 @@
 # yusr-server
 
-## Images
+Your Universal Smart Remote.
 
-### Apple TV Buttons
+## Licenses
+
+### Images
+
+#### Apple TV Buttons
 
 [Icons by Smashicons](https://www.freepik.com/author/smashicons/icons/basic-miscellany-flat_302?t=f&query=down)
