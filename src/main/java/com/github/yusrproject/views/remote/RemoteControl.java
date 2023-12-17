@@ -111,8 +111,8 @@ public class RemoteControl extends SideNavItem {
                         }
                     }
 
-                    grid.setWidth(50, Unit.PERCENTAGE);
-                    grid.setHeight(70, Unit.PERCENTAGE);
+                    grid.setWidth(33, Unit.PERCENTAGE);
+                    grid.setHeight(50, Unit.PERCENTAGE);
                     return grid;
                 }
             }
@@ -138,8 +138,8 @@ public class RemoteControl extends SideNavItem {
             StreamResource streamResource = new StreamResource(name, (InputStreamFactory) () -> new ByteArrayInputStream(command.getIcon()));
             Image image = new Image(streamResource, UUID.randomUUID().toString());
 
-            image.setWidth("64px");
-            image.setHeight("64px");
+            //image.setWidth("64px");
+            //image.setHeight("64px");
             return image;
         }
 
