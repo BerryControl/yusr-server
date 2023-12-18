@@ -15,9 +15,9 @@ import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -27,7 +27,7 @@ import com.vaadin.flow.server.StreamResource;
 import org.vaadin.lineawesome.LineAwesomeIcon;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,6 +50,7 @@ public class RemoteControl extends SideNavItem {
         private final PairedDevicesRepository devicesRepository;
 
         private PairedDevice selectedDevice = null;
+        private YusrDeviceDriver<YusrDeviceCommand> deviceDriverInstance = null;
 
         public RemoteControlView(DeviceRegistry registry, PairedDevicesRepository devicesRepository) {
             this.registry = registry;
@@ -69,18 +70,22 @@ public class RemoteControl extends SideNavItem {
         }
 
         private void renderDeviceSelection() {
-            ComboBox<PairedDevice> devicesComboBox = new ComboBox<>();
-            devicesComboBox.setItems(devicesRepository.findAll());
-            devicesComboBox.setItemLabelGenerator(this::labelForDevice);
-            devicesComboBox.setValue(selectedDevice);
-            devicesComboBox.addValueChangeListener(this::deviceSelected);
-            devicesComboBox.setWidth(50, Unit.PERCENTAGE);
+            List<PairedDevice> devices = devicesRepository.findAll();
+            Select<PairedDevice> devicesSelector = new Select<>();
+            devicesSelector.setItems(devices);
+            devicesSelector.setItemLabelGenerator(this::labelForDevice);
+            if (selectedDevice == null && !devices.isEmpty()) {
+                this.selectedDevice = devices.getFirst();
+            }
+            devicesSelector.setValue(selectedDevice);
+            devicesSelector.addValueChangeListener(this::deviceSelected);
+            devicesSelector.setWidth(50, Unit.PERCENTAGE);
 
-            this.add(devicesComboBox);
+            this.add(devicesSelector);
 
             Component remoteControlView = renderRemoteControlView();
             this.add(remoteControlView);
-            this.setHorizontalComponentAlignment(Alignment.CENTER, devicesComboBox, remoteControlView);
+            this.setHorizontalComponentAlignment(Alignment.CENTER, devicesSelector, remoteControlView);
         }
 
         private Component renderRemoteControlView() {
@@ -97,7 +102,7 @@ public class RemoteControl extends SideNavItem {
                     .findFirst();
 
                 if (driverDescriptor.isPresent()) {
-                    YusrDeviceDriver<YusrDeviceCommand> device = driverDescriptor.get().createDriverInstance(this.selectedDevice.getDeviceId());
+                    YusrDeviceDriver<YusrDeviceCommand> device = this.getOrCreateDeviceInstance(driverDescriptor.get());
                     GridLayout grid = new GridLayout(device.getRemoteLayoutWidth(), device.getRemoteLayoutHeight());
                     int[][] remoteLayout = device.getRemoteLayout();
 
@@ -111,12 +116,21 @@ public class RemoteControl extends SideNavItem {
                         }
                     }
 
-                    grid.setWidth(33, Unit.PERCENTAGE);
-                    grid.setHeight(50, Unit.PERCENTAGE);
+                    grid.setMargin(false);
+                    grid.setWidth(150, Unit.PIXELS);
+                    grid.setHeight(300, Unit.PIXELS);
                     return grid;
                 }
             }
             return new GridLayout(1, 1);
+        }
+
+        private YusrDeviceDriver<YusrDeviceCommand> getOrCreateDeviceInstance(YusrDeviceDriverDescriptor<YusrDeviceDriver<YusrDeviceCommand>, YusrDeviceInfo, YusrDeviceCommand> driverDescriptor) {
+            if (this.deviceDriverInstance == null && this.selectedDevice != null) {
+                this.deviceDriverInstance = driverDescriptor.createDriverInstance(this.selectedDevice.getDeviceId());
+            }
+
+            return this.deviceDriverInstance;
         }
 
         private Component buttonForCommandId(YusrDeviceDriver<YusrDeviceCommand> device, int commandId) {
@@ -136,15 +150,13 @@ public class RemoteControl extends SideNavItem {
         private Image convertToImage(YusrDeviceCommand command) {
             String name = UUID.randomUUID().toString(); //command.getTitle().replace(" ", "");
             StreamResource streamResource = new StreamResource(name, (InputStreamFactory) () -> new ByteArrayInputStream(command.getIcon()));
-            Image image = new Image(streamResource, UUID.randomUUID().toString());
 
-            //image.setWidth("64px");
-            //image.setHeight("64px");
-            return image;
+            return new Image(streamResource, UUID.randomUUID().toString());
         }
 
-        private void deviceSelected(AbstractField.ComponentValueChangeEvent<ComboBox<PairedDevice>, PairedDevice> valueChangeEvent) {
+        private void deviceSelected(AbstractField.ComponentValueChangeEvent<Select<PairedDevice>, PairedDevice> valueChangeEvent) {
             this.selectedDevice = valueChangeEvent.getValue();
+            this.deviceDriverInstance = null;
 
             renderView();
         }
