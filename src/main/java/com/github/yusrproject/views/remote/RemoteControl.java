@@ -148,10 +148,14 @@ public class RemoteControl extends SideNavItem {
         }
 
         private Image convertToImage(YusrDeviceCommand command) {
-            String name = UUID.randomUUID().toString(); //command.getTitle().replace(" ", "");
-            StreamResource streamResource = new StreamResource(name, (InputStreamFactory) () -> new ByteArrayInputStream(command.getIcon()));
+            String name = command.getTitle();
+            StreamResource streamResource = new StreamResource(cleanName(name), (InputStreamFactory) () -> new ByteArrayInputStream(command.getIcon()));
 
-            return new Image(streamResource, UUID.randomUUID().toString());
+            return new Image(streamResource, name);
+        }
+
+        private String cleanName(String name) {
+            return name.replace("/", "-");
         }
 
         private void deviceSelected(AbstractField.ComponentValueChangeEvent<Select<PairedDevice>, PairedDevice> valueChangeEvent) {
